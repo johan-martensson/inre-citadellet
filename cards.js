@@ -299,3 +299,107 @@ const SHADOW_CARDS = [
     reflect: "Vem tar hand om dig när du tar hand om alla andra?",
   },
 ];
+
+// Utmaningskort: den ena gör utmaningen och den andra lyssnar och ger återkoppling. Sedan byter ni.
+// token = dygden eller arketypen som rundans vinnare erövrar. timer = valfri nedräkning i sekunder.
+const CHALLENGE_CARDS = [
+  {
+    title: "Föreställ dig motgången",
+    school: "Stoisk",
+    token: "Mod",
+    task: "Föreställ dig att du förlorar jobbet i morgon. Berätta för din partner hur du skulle hantera det, steg för steg, och vad du skulle hålla fast vid.",
+    tip: "Det här är inte tänkt som en domedagsövning. Poängen är att upptäcka att du skulle klara det.",
+    insight: "Stoikerna övade på att tänka igenom motgångar i förväg (premeditatio malorum). Det gjorde dem inte pessimistiska. Det gjorde dem lugnare och mer tacksamma för det de redan hade.",
+    quote: { t: "Låt ingenting komma oväntat för dig. Skicka sinnet i förväg mot allt som kan hända.", src: "Seneca, Brev till Lucilius 91 (fritt återgivet)" },
+    timer: 120,
+  },
+  {
+    title: "Kvällsgenomgången",
+    school: "Stoisk",
+    token: "Visdom",
+    task: "Gå igenom din dag högt: vad gjorde du bra i dag, vad gjorde du mindre bra och vad tar du med dig till i morgon?",
+    tip: "Var lika vänlig mot dig själv som du skulle vara mot en god vän.",
+    insight: "Seneca beskrev hur han varje kväll, när ljuset släckts, gick igenom sin dag utan att dölja något för sig själv. Målet var inte att straffa sig själv, utan att bli lite klokare för varje dag.",
+    quote: { t: "Jag granskar hela min dag och mäter mina ord och handlingar. Jag döljer ingenting för mig själv.", src: "Seneca, Om vreden 3.36 (fritt återgivet)" },
+  },
+  {
+    title: "Utsikten ovanifrån",
+    school: "Stoisk",
+    token: "Måttfullhet",
+    task: "Välj något som oroar eller irriterar dig just nu. Beskriv det först som det känns i dag. Beskriv det sedan som du tror att du ser på det om tio år, och sist som det ser ut sett från rymden.",
+    tip: "Ta det i tre steg och låt varje steg få ta tid.",
+    insight: "Marcus Aurelius övade på att se sitt liv ”ovanifrån”, som en liten del av en väldig helhet. Oron försvinner inte, men den hamnar i rätt proportion.",
+    quote: { t: "Betrakta ovanifrån de otaliga människomassorna och allt deras görande.", src: "Marcus Aurelius, Självbetraktelser 9.30 (fritt återgivet)" },
+  },
+  {
+    title: "Försvara den andras sida",
+    school: "Stoisk",
+    token: "Rättvisa",
+    task: "Välj tillsammans något ni är oense om, stort eller litet. Argumentera sedan i en minut för din partners ståndpunkt, så bra och ärligt du kan.",
+    tip: "Det räknas inte som att ge med sig. Det är ett sätt att förstå.",
+    insight: "För stoikerna var rättvisa en av de fyra kardinaldygderna. Den börjar med viljan att förstå den andra innan man dömer.",
+    quote: { t: "Vänj dig vid att lyssna noga på vad en annan säger, och gå så långt det går in i den talandes sinne.", src: "Marcus Aurelius, Självbetraktelser 6.53" },
+    timer: 60,
+  },
+  {
+    title: "Det goda i den andra",
+    school: "Stoisk",
+    token: "Rättvisa",
+    task: "Säg tre saker du har lärt dig av din partner, saker som har gjort dig till en bättre människa.",
+    tip: "Var konkret. ”Du lärde mig att…” räcker långt.",
+    insight: "Självbetraktelser börjar med att Marcus Aurelius tackar dem han lärt sig av: farfar, mor, lärare och vänner. Tacksamhet var för honom en övning, inte bara en känsla.",
+    quote: { t: "När du vill glädja dig, tänk på förtjänsterna hos dem som lever med dig.", src: "Marcus Aurelius, Självbetraktelser 6.48" },
+  },
+  {
+    title: "Drömmen",
+    school: "Jungiansk",
+    token: "Självet",
+    task: "Berätta om en dröm du minns, gammal eller ny. Din partner frågar sedan: Vilken känsla fanns i drömmen? Var i ditt liv känner du igen den känslan?",
+    tip: "Ni behöver inte tolka drömmen rätt. Det räcker att vara nyfikna på den.",
+    insight: "Jung såg drömmar som det omedvetnas sätt att tala till oss, ofta för att balansera det vi inte ser i vaket tillstånd. Känslan i drömmen är ofta en bättre ledtråd än handlingen.",
+    quote: { t: "Den som ser utåt drömmer. Den som ser inåt vaknar.", src: "C.G. Jung, brev till F. Bowditch 1916" },
+  },
+  {
+    title: "Maskerna",
+    school: "Jungiansk",
+    token: "Persona",
+    task: "Beskriv med tre ord den du är på jobbet eller bland folk. Beskriv sedan med tre ord den du är hemma med din partner. Vad skiljer, och vad är gemensamt?",
+    tip: "Din partner får gärna säga om hen känner igen orden.",
+    insight: "Personan är den mask vi visar världen. Den är nödvändig, men det är viktigt att veta var masken slutar och man själv börjar.",
+    quote: { t: "Personan är en kompromiss mellan individen och samhället om vad man ska framstå som.", src: "C.G. Jung, Jaget och det omedvetna (fritt återgivet)" },
+  },
+  {
+    title: "Skuggans gåva",
+    school: "Jungiansk",
+    token: "Skuggan",
+    task: "Nämn en egenskap hos någon annan som verkligen irriterar dig. Försök sedan hitta ett sätt som just den egenskapen finns hos dig själv, eller hur den skulle kunna vara en styrka.",
+    tip: "Det svåra är steget från ”de” till ”jag”. Ta god tid på dig där.",
+    insight: "Jung menade att det vi inte vill se hos oss själva ofta projiceras på andra. När vi tar tillbaka projektionen får vi också tillbaka en del av oss själva, ibland en kraft vi saknat.",
+    quote: { t: "Allt som irriterar oss hos andra kan leda oss till en förståelse av oss själva.", src: "C.G. Jung, Minnen, drömmar, tankar" },
+  },
+  {
+    title: "Den inre motpolen",
+    school: "Jungiansk",
+    token: "Anima/Animus",
+    task: "Tänk på en person du beundrade starkt i ungdomen, eller när ni två träffades. Vad var det hos personen som drog dig till sig? Finns den egenskapen i dig i dag?",
+    tip: "Det kan vara en idol, en lärare, en vän eller din partner.",
+    insight: "Jung menade att vi ofta ser vår inre motpol, anima eller animus, i andra människor, särskilt i förälskelse och beundran. Det vi beundrar kan vara något i oss själva som vill växa.",
+    quote: { t: "Mötet mellan två personligheter är som kontakten mellan två kemiska ämnen: om det sker en reaktion förvandlas båda.", src: "C.G. Jung, Själen och det moderna samhället" },
+  },
+  {
+    title: "Arketypen i minnet",
+    school: "Jungiansk",
+    token: "Självet",
+    task: "Berätta om ett minne där du var Hjälten, Barnet, Den vise eller Rebellen, men säg inte vilken. Din partner gissar vilken arketyp som syntes i berättelsen.",
+    tip: "Efteråt kan ni prata om vilken arketyp som är starkast i dig just nu.",
+    insight: "Jung såg arketyperna som urmönster som finns hos alla människor. Att känna igen dem i sitt eget liv är ett steg på vägen mot det han kallade individuation: att bli den man är.",
+    quote: { t: "Man blir inte upplyst genom att föreställa sig ljusgestalter, utan genom att göra mörkret medvetet.", src: "C.G. Jung, Alkemistiska studier" },
+  },
+];
+
+// Det lyssnaren kan bocka i efter att den andra gjort utmaningen. Varje ikryssad ruta ger 1 poäng.
+const CHALLENGE_FEEDBACK = [
+  "Jag lärde mig något nytt om dig",
+  "Det berörde mig",
+  "Det kändes ärligt och modigt",
+];

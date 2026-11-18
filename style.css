@@ -108,3 +108,11 @@ cite { font-size: .8rem; color: var(--muted); font-style: normal; }
 .final { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .final:last-child { border-bottom: 0; }
 .final .chip { font-size: .72rem; }
+
+/* utmaningskort */
+label.check { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; }
+label.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+label.check .hint { grid-column: 2; font-weight: 400; }
+.asker { color: var(--muted); }
+.asker span { font-weight: 600; }
+.asker .p0 { color: var(--p0); } .asker .p1 { color: var(--p1); }

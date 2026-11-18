@@ -13,7 +13,9 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} };
 const load = () => { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } };
 const clearSave = () => { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} };
-const deckOf = (type) => (type === "control" ? CONTROL_CARDS : SHADOW_CARDS);
+const deckOf = (type) => ({ control: CONTROL_CARDS, shadow: SHADOW_CARDS, challenge: CHALLENGE_CARDS }[type]);
+const roundTypes = () => (S.challenges ? ["control", "shadow", "challenge"] : ["control", "shadow"]);
+let timer = null;      // nedräkning för utmaningskort (sparas inte)
 const name = (i) => esc(S.players[i].name);
 const other = (i) => 1 - i;
 const ctxOf = (c) => c.contexts || [null];               // skuggkort kan ha flera situationer
@@ -27,24 +29,25 @@ function shadowPoints(diffs) {
 }
 
 // ---------- spelflöde ----------
-function newGame(names, rounds) {
+function newGame(names, rounds, challenges) {
   S = {
     players: names.map((n) => ({ name: n, score: 0, tokens: [] })),
-    rounds, round: 0, vetos: [1, 1],
-    decks: { control: shuffle(CONTROL_CARDS.map((_, i) => i)), shadow: shuffle(SHADOW_CARDS.map((_, i) => i)) },
+    rounds, round: 0, vetos: [1, 1], challenges,
+    decks: {},
     cur: null, phase: "intro",
   };
   startRound();
 }
 
 function drawCard(type) {
-  if (!S.decks[type].length) S.decks[type] = shuffle(deckOf(type).map((_, i) => i));
+  if (!S.decks[type] || !S.decks[type].length) S.decks[type] = shuffle(deckOf(type).map((_, i) => i));
   return S.decks[type].pop();
 }
 
 function startRound() {
-  const type = S.round % 2 === 0 ? "control" : "shadow";
-  const first = Math.floor(S.round / 2) % 2;
+  const types = roundTypes();
+  const type = types[S.round % types.length];
+  const first = Math.floor(S.round / types.length) % 2;
   S.cur = { type, card: drawCard(type), first, answers: [null, null], result: null };
   shuffleCardOrder();
   S.phase = "intro";
@@ -67,7 +70,25 @@ function useVeto(p) {
   render();
 }
 
-function go(phase, who) { S.phase = phase; S.cur.who = who; draft = null; render(); window.scrollTo(0, 0); }
+function go(phase, who) { stopTimer(); S.phase = phase; S.cur.who = who; draft = null; render(); window.scrollTo(0, 0); }
+
+function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+
+function startTimer(btn, secs) {
+  stopTimer();
+  let left = secs;
+  const show = () => (btn.textContent = left > 0 ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "Tiden är ute");
+  show();
+  timer = setInterval(() => { left--; show(); if (left <= 0) stopTimer(); }, 1000);
+}
+
+// Utmaning: den som lyssnade har bockat i återkoppling till den som gjorde utmaningen.
+function submitChallenge() {
+  const p = S.cur.who;
+  S.cur.answers[p] = { fb: draft ? draft.fb : [] };
+  if (p === S.cur.first) go("perform", other(p));
+  else { scoreRound(); go("reveal"); }
+}
 
 function submitAnswer() {
   const p = S.cur.who;
@@ -90,7 +111,7 @@ function scoreRound() {
       return { correct, guess, known, total: correct + guess + known };
     });
     token = c.virtue;
-  } else {
+  } else if (cur.type === "shadow") {
     const c = SHADOW_CARDS[cur.card];
     pts = cur.answers.map((a, i) => {
       const self = arr(cur.answers[other(i)].self);
@@ -98,6 +119,10 @@ function scoreRound() {
       return { diffs, total: shadowPoints(diffs) };
     });
     token = c.arch;
+  } else {
+    const c = CHALLENGE_CARDS[cur.card];
+    pts = cur.answers.map((a) => ({ total: a.fb.filter(Boolean).length }));
+    token = c.token;
   }
   const best = Math.max(pts[0].total, pts[1].total);
   const winners = [0, 1].filter((i) => best > 0 && pts[i].total === best);
@@ -152,16 +177,19 @@ const VIEWS = {
       <label>Spelare 1<input name="p0" required maxlength="20" placeholder="Namn"></label>
       <label>Spelare 2<input name="p1" required maxlength="20" placeholder="Namn"></label>
       <label>Antal rundor
-        <select name="rounds"><option>4</option><option selected>6</option><option>8</option><option>10</option></select>
+        <select name="rounds"><option>4</option><option selected>6</option><option>8</option><option>9</option><option>10</option><option>12</option></select>
       </label>
+      <label class="check"><input type="checkbox" name="challenges"> Ta med utmaningskort
+        <span class="hint">En tredje rundtyp med korta övningar som ni gör tillsammans, till exempel att berätta en dröm eller försvara den andras ståndpunkt.</span></label>
       <button class="btn" type="submit">Börja spela</button>
     </form>
     <details class="card rules"><summary>Så spelar ni</summary>
-      <p>Rundorna växlar mellan två typer:</p>
+      <p>Rundorna växlar mellan två typer, eller tre om ni tar med utmaningskorten:</p>
       <p><strong>Kontrolldikotomin (stoisk).</strong> Ni får en vardagssituation. Var och en avgör i hemlighet vad som ligger <em>i min makt</em> och vad som inte gör det, och väljer hur man faktiskt skulle reagera, inte hur man borde. Ni gissar också hur den andra reagerar. Ni får 1 poäng per rätt sortering, 2 poäng om ni gissar rätt på den andras reaktion och 1 poäng om den andra gissar rätt på er. Den egna reaktionen ger inga poäng, så ärlighet lönar sig: den som visar sitt verkliga jag blir lättare att känna igen.</p>
       <p><strong>Skuggspegeln (jungiansk).</strong> Ni får ett påstående om er själva. Var och en svarar i hemlighet hur väl det stämmer, och gissar sedan vad partnern svarade. Rätt gissning ger 3 poäng och en gissning som är ett steg ifrån ger 1 poäng. Vissa kort delas upp i flera situationer, till exempel hemma och på jobbet. Då räknas den sammanlagda avvikelsen: ingen avvikelse ger 3 poäng, högst 2 steg ger 2 poäng och högst 4 steg ger 1 poäng. Att svara ärligt lönar sig, eftersom det är så ni lär er läsa varandra.</p>
       <p><strong>Dygder och arketyper.</strong> Den som vinner en runda erövrar rundans dygd eller arketyp. Varje unik symbol ger en bonuspoäng i slutet. Det är vägen mot Självet.</p>
       <p><strong>Reflektion.</strong> Varje runda avslutas med en fråga att prata om. Den som fick lägst poäng svarar först.</p>
+      <p><strong>Utmaningskort (valfritt).</strong> Korta övningar ur stoisk och jungiansk tradition som ni gör högt, en i taget. Den som lyssnar bockar i vad det gav: <em>Jag lärde mig något nytt om dig</em>, <em>Det berörde mig</em> och <em>Det kändes ärligt och modigt</em>. Varje ruta ger 1 poäng. Med utmaningskort roterar spelet mellan alla tre rundtyperna.</p>
       <p><strong>Veto.</strong> Var och en har ett veto per spel och kan använda det för att byta ut ett kort som känns fel just i dag.</p>
     </details>`;
   },
@@ -170,6 +198,13 @@ const VIEWS = {
     const { type, card } = S.cur;
     const vetoBtns = [0, 1].filter((i) => S.vetos[i]).map((i) =>
       `<button class="btn ghost small" data-action="veto" data-p="${i}">Veto (${name(i)})</button>`).join("");
+    if (type === "challenge") {
+      const c = CHALLENGE_CARDS[card];
+      return `<div class="card"><div class="kind">Utmaning · ${c.school} · ${c.token}</div>
+        <h2>${c.title}</h2><p class="lead">${c.task}</p>
+        <p class="hint">Här svarar ingen i hemlighet. Ni turas om: den ena gör utmaningen och den andra lyssnar och ger återkoppling. Sedan byter ni.</p>
+        <div class="row"><button class="btn" data-action="perform">${name(S.cur.first)} börjar</button>${vetoBtns}</div></div>`;
+    }
     const body = type === "control"
       ? `<div class="kind">Kontrolldikotomin · ${CONTROL_CARDS[card].virtue}</div>
          <h2>${CONTROL_CARDS[card].title}</h2><p class="lead">${CONTROL_CARDS[card].text}</p>
@@ -227,6 +262,22 @@ const VIEWS = {
       <button class="btn" data-action="submit" id="submit" disabled>Lås mitt svar</button></div>`;
   },
 
+  perform() {
+    const c = CHALLENGE_CARDS[S.cur.card];
+    const p = S.cur.who, l = other(p);
+    draft = draft || { fb: CHALLENGE_FEEDBACK.map(() => false) };
+    return `<div class="card">
+      <div class="kind">Utmaning · ${c.title}</div>
+      <p class="asker"><span class="p${p}">${name(p)}</span> gör utmaningen, och <span class="p${l}">${name(l)}</span> lyssnar utan att avbryta.</p>
+      <p class="lead">${c.task}</p>
+      <p class="hint">${c.tip}</p>
+      ${c.timer ? `<button class="btn ghost small" data-action="timer" data-s="${c.timer}">Starta timer (${Math.round(c.timer / 60 * 10) / 10} min)</button>` : ""}
+      <h3>${name(l)}, vad gav det dig?</h3>
+      <p class="hint">Bocka i det som stämmer. Varje ruta ger ${name(p)} 1 poäng.</p>
+      ${CHALLENGE_FEEDBACK.map((t, k) => `<button class="opt ${draft.fb[k] ? "sel" : ""}" data-action="fb" data-k="${k}">${t}</button>`).join("")}
+      <button class="btn" data-action="doneChallenge">${p === S.cur.first ? `Klart, nu är det ${name(l)}s tur` : "Klart, visa resultatet"}</button></div>`;
+  },
+
   together() {
     return `<div class="card center pass">
       <p class="hint">Båda har svarat</p>
@@ -269,6 +320,14 @@ const VIEWS = {
         ${[0, 1].some((i) => c.responses[answers[i].resp].p < 2)
           ? `<p class="hint">Att erkänna att man inte alltid lever upp till idealet är början på all stoisk övning. Vad skulle krävas för att välja idealet nästa gång?</p>` : ""}
         <p class="insight">${c.insight}</p>${quoteBlock(c.quote)}`;
+    } else if (type === "challenge") {
+      const c = CHALLENGE_CARDS[card];
+      body = `<div class="kind">Utmaning · ${c.school}</div><h2>${c.title}</h2>
+        ${[0, 1].map((i) => {
+          const got = CHALLENGE_FEEDBACK.filter((_, k) => answers[i].fb[k]);
+          return `<div class="optres"><span class="otext"><span class="p${i}"><strong>${name(i)}</strong></span> fick höra av ${name(other(i))}: ${got.length ? got.map((t) => `<em>${t.toLowerCase()}</em>`).join(", ") : "<em>ingen återkoppling den här gången</em>"}</span></div>`;
+        }).join("")}
+        <p class="insight">${c.insight}</p>${quoteBlock(c.quote)}`;
     } else {
       const c = SHADOW_CARDS[card];
       const ctx = ctxOf(c);
@@ -290,8 +349,10 @@ const VIEWS = {
       body = `<p class="lead">”${c.trait}”</p>${mirror}
         <p class="insight">${c.insight}</p>${quoteBlock(c.quote)}`;
     }
-    return `<div class="card">${body}${ptsLine}${tokenLine}
-      <button class="btn" data-action="reflect">Till reflektionen</button></div>`;
+    const btn = type === "challenge"
+      ? `<button class="btn" data-action="next">${S.round + 1 >= S.rounds ? "Avsluta spelet" : "Nästa runda"}</button>`
+      : `<button class="btn" data-action="reflect">Till reflektionen</button>`;
+    return `<div class="card">${body}${ptsLine}${tokenLine}${btn}</div>`;
   },
 
   reflect() {
@@ -345,7 +406,7 @@ app.addEventListener("submit", (e) => {
   const f = new FormData(e.target);
   const names = [f.get("p0").trim(), f.get("p1").trim()];
   if (!names[0] || !names[1]) return;
-  newGame(names, parseInt(f.get("rounds"), 10));
+  newGame(names, parseInt(f.get("rounds"), 10), f.get("challenges") === "on");
 });
 
 app.addEventListener("click", (e) => {
@@ -377,8 +438,14 @@ app.addEventListener("click", (e) => {
     case "submit": submitAnswer(); break;
     case "reveal": go("reveal"); break;
     case "reflect": go("reflect"); break;
+    case "perform": go("perform", S.cur.first); break;
+    case "fb":
+      draft.fb[+b.dataset.k] = !draft.fb[+b.dataset.k];
+      b.classList.toggle("sel", draft.fb[+b.dataset.k]); break;
+    case "timer": startTimer(b, +b.dataset.s); break;
+    case "doneChallenge": submitChallenge(); break;
     case "swapAsker": S.cur.result.starter = other(S.cur.result.starter); render(); break;
-    case "next": nextRound(); break;
+    case "next": stopTimer(); nextRound(); break;
     case "restart": S = null; render(); break;
   }
 });
